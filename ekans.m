@@ -81,19 +81,14 @@ function slider1_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
+
  setappdata(handles.figure1,'currentFrame',get(handles.slider1,'value'));
  iImage = round(getappdata(handles.figure1,'currentFrame'));
  setappdata(0, 'iImage', iImage);
  imFiles = getappdata(0,'imFiles');
- image = im2double(imread(imFiles(iImage).name));
- ax1 = imagesc(image, 'parent', handles.axes1);
-  centerlines = getappdata(0, 'centerlines');
-
- if size(centerlines,3)>=iImage
- hold on;
- plot(centerlines(:,2,iImage), centerlines(:,1,iImage), '-g','parent', handles.axes1)
- hold off;
- end
+centerlines = getappdata(0, 'centerlines');
+plotWsnake(centerlines, iImage, imFiles, handles);
 
 % --- Executes during object creation, after setting all properties.
 function slider1_CreateFcn(hObject, eventdata, handles)
@@ -143,13 +138,11 @@ imFiles = getappdata(0, 'imFiles');
 imFolder = getappdata(0, 'imFolder');
 centerlines = getappdata(0,'centerlines');
 image = im2double(imread(imFiles(iImage).name));
-centerlines(:,:,iImage)= initialSnake(imFolder, image, background);
 
- ax1 = imagesc(image, 'parent', handles.axes1);
- hold on;
-plot(centerlines(:,2,iImage), centerlines(:,1, iImage), '-g','parent', handles.axes1)
-hold off;
-save('20150606_cl.mat', 'centerlines', '-v6');
+centerlines(:,:, iImage) = initialSnake(imFolder, image, background);
+
+plotWsnake(centerlines, iImage, imFiles, handles);
+save('20150610_cl.mat', 'centerlines', '-v6');
 setappdata(0, 'centerlines', centerlines);
 
 % --- Executes on button press in autoSnake.
@@ -164,12 +157,20 @@ background = getappdata(0, 'background');
 centerlines = getappdata(0, 'centerlines');
 
 
+
 while(get(handles.autoPilot,'value'))
+    
+    if (size(centerlines,3)<iImage-1)
+        disp('Aborting autopilot because the previous frame has no snake!');
+        disp('Go back a frame and get a snake.')
+        break
+    end
+    
+    disp('Auto piloting..');
     image = im2double(imread(imFiles(iImage).name));
-    ax1 = imagesc(image, 'parent', handles.axes1);
     I = image(:,:,1) - background(:,:,1);
     
-    snakeInit = zeros(102,2);
+    
     snakeInit = centerlines(:,:,iImage-1); 
     %tips
     tips = tiptry(imFolder, iImage, background);
@@ -178,17 +179,12 @@ while(get(handles.autoPilot,'value'))
     fixtips(:,1) = tips(1:2:end-1);
     fixtips(:,2) = tips(2:2:end);
     rightTips = goodTips(snakeInit, fixtips);
-    %centerline
-    centerline = SnakeySnakey(rightTips(1,:), rightTips(2,:), snakeInit, I);
+    centerlines(:,:,iImage) = SnakeySnakey(rightTips(1,:), rightTips(2,:), snakeInit, I);
    
-    hold on;
-    plot(centerline(:,2), centerline(:,1), '-g','parent', handles.axes1);
-    
-     centerlines(:,:,iImage) = centerline;   
-     hold off;
-    save('20150606_cl.mat', 'centerlines', '-v6');
+    plotWsnake(centerlines, iImage, imFiles, handles);
+    save('20150610_cl.mat', 'centerlines', '-v6');
     setappdata(0, 'centerlines', centerlines);
-    
+    disp('Waiting..');
     pause(.4);
     iImage = iImage+1;
     setappdata(0, 'iImage', 'iImage');
@@ -201,6 +197,7 @@ function autoPilot_Callback(hObject, eventdata, handles)
 % hObject    handle to autoPilot (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+disp('Toggling autopilot!');
 
 
 % --- Executes on button press in manTips.
@@ -208,32 +205,38 @@ function manTips_Callback(hObject, eventdata, handles)
 % hObject    handle to manTips (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
 iImage = getappdata(0, 'iImage');
 imFiles = getappdata(0, 'imFiles');
 imFolder = getappdata(0, 'imFolder');
 background = getappdata(0, 'background');
 centerlines = getappdata(0, 'centerlines');
+
 [y,x]=ginput(2);
+
  image = im2double(imread(imFiles(iImage).name));
-% hfig=figure(20);
-% hImage=imagesc(image);
-% [y,x] = getpts(hfig);
-% close(hfig)
+
 tip1 = [x(1) y(1)];
 tip2 = [x(2) y(2)];
 snakeInit = centerlines(:,:, iImage-1);
+
 I = image(:,:,1)- background(:,:,1);
+
+disp('Computing centerline...');
 centerlines(:,:,iImage) = SnakeySnakey(tip1, tip2, snakeInit, I);
-  hold on;
-    plot(centerlines(:,2, iImage), centerlines(:,1, iImage), '-g','parent', handles.axes1);
-save('20150606_cl.mat', 'centerlines', '-v6');
+disp('OK!');
+plotWsnake(centerlines, iImage, imFiles, handles);
+save('20150610_cl.mat', 'centerlines', '-v6');
+
 setappdata(0, 'centerlines', centerlines);
+
 
 % --- Executes on button press in lastTips.
 function lastTips_Callback(hObject, eventdata, handles)
 % hObject    handle to lastTips (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+disp('Grabbing tips from last frame...');
 iImage = getappdata(0, 'iImage');
 imFiles = getappdata(0, 'imFiles');
 imFolder = getappdata(0, 'imFolder');
@@ -242,16 +245,15 @@ centerlines = getappdata(0, 'centerlines');
 
 rightTips = [centerlines(1, :, iImage-1);centerlines(end,:,iImage-1)];
 image = im2double(imread(imFiles(iImage).name));
-ax1 = imagesc(image, 'parent', handles.axes1);
+
 I = image(:,:,1) - background(:,:,1);
 snakeInit = centerlines(:,:,iImage-1);
-centerline = SnakeySnakey(rightTips(1,:), rightTips(2,:), snakeInit, I);
-  hold on;
-    plot(centerline(:,2), centerline(:,1), '-g','parent', handles.axes1);
+disp('Calculating centerline...');
+centerlines(:,:,iImage) = SnakeySnakey(rightTips(1,:), rightTips(2,:), snakeInit, I);
+disp('OK!');
+plotWsnake(centerlines, iImage, imFiles, handles);
     
-     centerlines(:,:,iImage) = centerline;   
-     hold off;
-    save('20150606_cl.mat', 'centerlines', '-v6');
+    save('20150610_cl.mat', 'centerlines', '-v6');
     setappdata(0, 'centerlines', centerlines);
 
 
@@ -264,7 +266,7 @@ function figure1_KeyPressFcn(hObject, eventdata, handles)
 %	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
 % handles    structure with handles and user data (see GUIDATA)
 switch eventdata.Key
-    case {'m' 'space'}
+    case {'w' 'space'}
          manTips_Callback(hObject, eventdata, handles)
     case 'shift'
          lastTips_Callback(hObject, eventdata, handles)
@@ -284,4 +286,22 @@ function loadCenterlines_Callback(hObject, eventdata, handles)
 % hObject    handle to loadCenterlines (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+[bpath, parent] = uigetfile;
+centerlines = load([parent filesep bpath]);
+centerlines = cell2mat(struct2cell(centerlines));
+setappdata(0, 'centerlines', centerlines);
 
+% Updates the main window of the gui
+function plotWsnake(centerlines, iImage, imFiles, handles)
+cla(handles.axes1);
+
+
+ image = im2double(imread(imFiles(iImage).name));
+ hold on;
+ ax1 = imagesc(image, 'parent', handles.axes1);
+ if size(centerlines,3)>=iImage
+     hold on;
+     plot(centerlines(:,2,iImage), centerlines(:,1,iImage), '-g','parent', handles.axes1)
+     hold off;
+ end
+ disp(iImage)

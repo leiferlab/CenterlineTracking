@@ -30,7 +30,7 @@ B = internal_energy(alpha, beta, gamma, nPoints);
 
 Pold = P;
 
-K = relax2tip_mt(Pold, tip1, tip2, kappa, Fline, gamma, B, nPoints, ConCrit, cd, mu1,I);
+K = relax2tip_gui(Pold, tip1, tip2, kappa, Fline, gamma, B, nPoints, ConCrit, cd, mu1,I);
 
 P = K;
  CL = P;

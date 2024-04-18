@@ -1,15 +1,15 @@
 function [CL] = SnakeWithTips(tip1, tip2, P, I)
 
 %Define parameters
-nPoints = 102; % Numbers of points in the contour
-gamma = 7;    %Iteration time step
-ConCrit = .05; %Convergence criteria
-kappa = 720;     % Weight of the image force as a whole
-sigma = 6;   %Smoothing for the derivative calculations in the image
-alpha = 0; % Bending modulus
-beta = 110;
-nu = 40;  %tip force
-mu1 =50; %repel force
+nPoints = 100; % Numbers of points in the contour
+gamma =18;    %Iteration time step
+ConCrit = 2; %Convergence criteria
+kappa = 100;     % Weight of the image force as a whole
+sigma = 14;   %Smoothing for the derivative calculations in the image
+alpha = 50; % Bending modulus
+beta = 20;
+nu = 10;  %tip force
+mu1 =10; %repel force
 cd = 16; %cutoff distance for repel force
 
 

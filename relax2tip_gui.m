@@ -8,7 +8,7 @@ while Pdiff > ConCrit
     
     Frepel = repel(P, cd, mu1);
     
-    Fext = zeros(102,2);
+    Fext = zeros(100,2);
     %get image forces (line only) on the contour
     Fext(2:nPoints-1,1) = kappa*(interp2(Fline(:,:,1),P(2:nPoints-1,2),P(2:nPoints-1,1))) ;               
     Fext(2:nPoints-1,2) = kappa*(interp2(Fline(:,:,2),P(2:nPoints-1,2),P(2:nPoints-1,1)));
